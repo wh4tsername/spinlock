@@ -6,6 +6,7 @@
 class SpinLock {
  public:
   SpinLock() = default;
+  ~SpinLock() = default;
   void Lock();
   bool TryLock();
   void Unlock();

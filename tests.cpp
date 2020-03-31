@@ -19,35 +19,8 @@ class Tester {
 
  public:
   void operator()() {
-    InitTester(1s);
-
-    std::thread unit_test_executor([this]() {
-      LockUnlock();
-      LockUnlockSequence();
-      TryLock();
-
-      done_ = true;
-    });
-    std::thread unit_test_checker([this]() { WaitAndCheckForTL(); });
-
-    unit_test_executor.join();
-    unit_test_checker.join();
-
-    std::cout << "Unit tests passed /ᐠ.ꞈ.ᐟ\\" << std::endl;
-
-    InitTester(5s);
-
-    std::thread stress_test_executor([this]() {
-      StressTest();
-
-      done_ = true;
-    });
-    std::thread stress_test_checker([this]() { WaitAndCheckForTL(); });
-
-    stress_test_executor.join();
-    stress_test_checker.join();
-
-    std::cout << "Stress tests passed (=^ ◡ ^=)" << std::endl;
+    UnitTest();
+    StressTest();
   }
 
  private:
@@ -82,6 +55,40 @@ class Tester {
     }
   }
 
+  void UnitTest() {
+    InitTester(1s);
+
+    std::thread unit_test_executor([this]() {
+      LockUnlock();
+      LockUnlockSequence();
+      TryLock();
+
+      done_ = true;
+    });
+    std::thread unit_test_checker([this]() { WaitAndCheckForTL(); });
+
+    unit_test_executor.join();
+    unit_test_checker.join();
+
+    std::cout << "Unit tests passed /ᐠ.ꞈ.ᐟ\\" << std::endl;
+  }
+
+  void StressTest() {
+    InitTester(5s);
+
+    std::thread stress_test_executor([this]() {
+      StressLockUnlock();
+
+      done_ = true;
+    });
+    std::thread stress_test_checker([this]() { WaitAndCheckForTL(); });
+
+    stress_test_executor.join();
+    stress_test_checker.join();
+
+    std::cout << "Stress tests passed (=^ ◡ ^=)" << std::endl;
+  }
+
   static void LockUnlock() {
     SpinLock spinlock;
     spinlock.Lock();
@@ -107,7 +114,7 @@ class Tester {
     ConditionalHandleError(spinlock.TryLock(), "SpinLock TryLock failure");
   }
 
-  void StressTest() {
+  void StressLockUnlock() {
     const int NUM_THREADS = 1000;
     std::vector<std::thread> thread_pool;
     thread_pool.reserve(NUM_THREADS);
