@@ -1,8 +1,8 @@
 #include <chrono>
-#include <condition_variable>
 #include <functional>
 #include <iostream>
 #include <random>
+#include <thread>
 #include <vector>
 
 #include "spinlock.h"
@@ -90,28 +90,28 @@ class Tester {
   }
 
   static void LockUnlock() {
-    SpinLock spinlock;
-    spinlock.Lock();
-    spinlock.Unlock();
+    spinlock spinlock;
+    spinlock.lock();
+    spinlock.unlock();
   }
 
   static void LockUnlockSequence() {
-    SpinLock spinlock;
-    spinlock.Lock();
-    spinlock.Unlock();
-    spinlock.Lock();
-    spinlock.Unlock();
+    spinlock spinlock;
+    spinlock.lock();
+    spinlock.unlock();
+    spinlock.lock();
+    spinlock.unlock();
   }
 
   void TryLock() {
-    SpinLock spinlock;
-    ConditionalHandleError(!spinlock.TryLock(), "SpinLock TryLock failure");
-    ConditionalHandleError(spinlock.TryLock(), "SpinLock TryLock failure");
-    spinlock.Unlock();
-    ConditionalHandleError(!spinlock.TryLock(), "SpinLock TryLock failure");
-    spinlock.Unlock();
-    spinlock.Lock();
-    ConditionalHandleError(spinlock.TryLock(), "SpinLock TryLock failure");
+    spinlock spinlock;
+    ConditionalHandleError(!spinlock.try_lock(), "spinlock try_lock failure");
+    ConditionalHandleError(spinlock.try_lock(), "spinlock try_lock failure");
+    spinlock.unlock();
+    ConditionalHandleError(!spinlock.try_lock(), "spinlock try_lock failure");
+    spinlock.unlock();
+    spinlock.lock();
+    ConditionalHandleError(spinlock.try_lock(), "spinlock try_lock failure");
   }
 
   void StressLockUnlock() {
@@ -120,30 +120,30 @@ class Tester {
     thread_pool.reserve(NUM_THREADS);
 
     const int NUM_SPINLOCKS = 10;
-    std::vector<SpinLock> spinlocks(NUM_SPINLOCKS);
+    std::vector<spinlock> spinlocks(NUM_SPINLOCKS);
 
     std::random_device dev;
     std::mt19937 rng(dev());
     std::uniform_int_distribution<std::mt19937::result_type> index_dist(
         0, NUM_SPINLOCKS - 1);
-    std::uniform_int_distribution<std::mt19937::result_type> dist(0, 1);
+    std::uniform_int_distribution<std::mt19937::result_type> scenario_dist(0,
+                                                                           1);
     for (int i = 0; i < NUM_THREADS; ++i) {
       thread_pool.emplace_back(std::thread(std::bind([&]() {
-        int scenario = dist(dev);
+        int scenario = scenario_dist(dev);
         int index = index_dist(dev);
         switch (scenario) {
           case 0:
-            while (!spinlocks[index].TryLock())
+            while (!spinlocks[index].try_lock())
               ;
             break;
-          case 1:
-            spinlocks[index].Lock();
+          case 1:spinlocks[index].lock();
             break;
           default:
             ConditionalHandleError(true, "scenario generation failure");
         }
         std::this_thread::sleep_for(100ns);
-        spinlocks[index].Unlock();
+        spinlocks[index].unlock();
       })));
     }
 

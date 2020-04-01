@@ -1,15 +1,14 @@
 #pragma once
 
 #include <atomic>
-#include <thread>
 
-class SpinLock {
+class spinlock {
  public:
-  SpinLock() = default;
-  ~SpinLock() = default;
-  void Lock();
-  bool TryLock();
-  void Unlock();
+  spinlock() = default;
+  ~spinlock() = default;
+  void lock();
+  bool try_lock();
+  void unlock();
 
  private:
   std::atomic<bool> locked_{false};

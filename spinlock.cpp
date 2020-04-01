@@ -1,13 +1,14 @@
 #include "spinlock.h"
 
-void SpinLock::Lock() {
+void spinlock::lock() {
   while (locked_.exchange(true)) {
     while (locked_.load()) {
-      std::this_thread::yield();
+      // Burns CPU time... there should be std::this::thread_yield or sleep
+      // can't include <thread> because of genmc ABI issues
     }
   }
 }
 
-bool SpinLock::TryLock() { return locked_.exchange(true) == 0; }
+bool spinlock::try_lock() { return locked_.exchange(true) == 0; }
 
-void SpinLock::Unlock() { locked_.store(false); }
+void spinlock::unlock() { locked_.store(false); }
